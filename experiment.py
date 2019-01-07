@@ -55,7 +55,6 @@ class SSAT_Color(klibs.Experiment):
 
 		self.item_duration = .5 # seconds
 		self.isi = .1  		# seconds
-		self.rsvp_stream = []
 
 		self.anykey_text = "{0}\nPress any key to continue."
 
@@ -168,7 +167,7 @@ class SSAT_Color(klibs.Experiment):
 		self.spatial_rc.keypress_listener.interrupts = True
 		self.spatial_rc.keypress_listener.key_map = self.group_A_keymap if self.group == 'A' else self.group_B_keymap
 
-		self.temporal_rc.terminate_after = [10, TK_S]
+		self.temporal_rc.terminate_after = [100, TK_S]
 		self.temporal_rc.keypress_listener.key_map = self.group_A_keymap if self.group == 'A' else self.group_B_keymap
 		self.temporal_rc.keypress_listener.interrupts = True 
 		self.temporal_rc.display_callback = self.present_stream
@@ -363,9 +362,9 @@ class SSAT_Color(klibs.Experiment):
 	def present_stream(self):
 		hide_mouse_cursor()
 
-		duration_cd = CountDown(self.item_duration)
-		isi_cd = CountDown(self.isi)
-		response_window_cd = CountDown(5) # seconds
+		duration_cd = CountDown(self.item_duration, start=False)
+		isi_cd = CountDown(self.isi, start=False)
+		response_window_cd = CountDown(5, start=False) # seconds
 
 		last_item = True if len(self.rsvp_stream) == 1 else False
 		item = self.rsvp_stream.pop()
@@ -374,7 +373,7 @@ class SSAT_Color(klibs.Experiment):
 		blit(item[0], registration=5, location=P.screen_c)
 		flip()
 
-		duration_cd.reset()
+		duration_cd.start()
 		while duration_cd.counting():
 			pass
 		
@@ -383,12 +382,12 @@ class SSAT_Color(klibs.Experiment):
 		if item[1]:
 			self.target_onset = self.evm.trial_time_ms - 3000
 		
-		isi_cd.reset()
+		isi_cd.start()
 		while isi_cd.counting():
 			pass
 
 		if last_item:
 			clear()
-			response_window_cd.reset()
+			response_window_cd.start()
 			while response_window_cd.counting():
 				pass
