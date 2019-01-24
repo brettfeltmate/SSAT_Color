@@ -201,6 +201,7 @@ class SSAT_Color(klibs.Experiment):
 			self.evm.register_ticket(ET(e[1], e[0]))
 
 		hide_mouse_cursor()
+		self.pre_stream_sw = Stopwatch()
 		self.present_target()
 
 	def trial(self):
@@ -225,6 +226,7 @@ class SSAT_Color(klibs.Experiment):
 				spatial_response = "None"
 				spatial_rt = 'NA'
 		else:
+			self.pre_stream_sw.pause()
 			try:
 				# the display callback "present_stream()" pops an element each pass; when all targets have been shown this bad boy throws an error
 				self.temporal_rc.collect()
@@ -246,7 +248,7 @@ class SSAT_Color(klibs.Experiment):
 			"search_type": self.search_type,
 			"stimulus_type": 'COLOR',
 			"present_absent": self.present_absent,
-			"set_size": self.set_size,
+			"set_size": self.set_size if self.search_type == SPACE else "NA",
 			"target_distractor": self.target_distractor,
 			"distractor_distractor": self.distractor_distractor,
 			"target_time": self.target_time if self.search_type == TIME else "NA",
@@ -299,7 +301,7 @@ class SSAT_Color(klibs.Experiment):
 			message("Incorrect!", location=P.screen_c, registration=5, blit_txt=True)
 		flip()
 
-		feedback_period_cd = CountDown(1) # seconds
+		feedback_period_cd = CountDown(0.5) # seconds
 		while feedback_period_cd.counting():
 			pass
 
@@ -340,12 +342,12 @@ class SSAT_Color(klibs.Experiment):
 
 
 	def prepare_stream(self):
-		self.stream_length = 20
+		self.stream_length = 16
 
 		stream_items = []
 
 		if self.present_absent == PRESENT:
-			self.target_time = random.randint(5, 16)
+			self.target_time = random.randint(5, 12)
 		else:
 			self.target_time = -1
 
@@ -363,7 +365,7 @@ class SSAT_Color(klibs.Experiment):
 
 		duration_cd = CountDown(self.item_duration, start=False)
 		isi_cd = CountDown(self.isi, start=False)
-		response_window_cd = CountDown(3, start=False) # seconds
+		response_window_cd = CountDown(2, start=False) # seconds
 
 
 		last_item = True if len(self.rsvp_stream) == 1 else False
@@ -380,7 +382,7 @@ class SSAT_Color(klibs.Experiment):
 		fill()
 
 		if item[1]:
-			self.target_onset = self.evm.trial_time_ms - 3000
+			self.target_onset = self.evm.trial_time_ms - self.pre_stream_sw.elapsed()
 		
 		isi_cd.start()
 		while isi_cd.counting():
