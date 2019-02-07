@@ -89,18 +89,17 @@ class SSAT_Color(klibs.Experiment):
 
 		self.spatial_conditions_exp = [[HOMO, HETERO], [HOMO, HOMO], [HETERO, HOMO], [HETERO, HETERO]]
 		self.temporal_conditions_exp = [[HOMO, HETERO], [HOMO, HOMO], [HETERO, HOMO], [HETERO, HETERO]]
-		self.spatial_conditions_prac = [[HOMO, HETERO], [HOMO, HOMO], [HETERO, HOMO], [HETERO, HETERO]]
-		self.temporal_conditions_prac = [[HOMO, HETERO], [HOMO, HOMO], [HETERO, HOMO], [HETERO, HETERO]]
+		self.practice_conditions = [[HOMO, HETERO], [HOMO, HOMO], [HETERO, HOMO], [HETERO, HETERO]]
 
 		random.shuffle(self.spatial_conditions_exp)
 		random.shuffle(self.temporal_conditions_exp)
-		random.shuffle(self.spatial_conditions_prac)
-		random.shuffle(self.temporal_conditions_prac)
+		random.shuffle(self.practice_conditions)
+
 
 		self.search_type = random.choice([SPACE, TIME])
 
 		if P.run_practice_blocks:
-			self.insert_practice_block(block_nums=range(1,9), trial_counts=P.trials_per_practice_block)
+			self.insert_practice_block(block_nums=range(1,5), trial_counts=P.trials_per_practice_block)
 
 	def block(self):
 
@@ -110,10 +109,7 @@ class SSAT_Color(klibs.Experiment):
 			else:
 				self.condition = self.temporal_conditions_exp.pop()
 		else:
-			if self.search_type == SPACE:
-				self.condition = self.spatial_conditions_prac.pop()
-			else:
-				self.condition = self.temporal_conditions_prac.pop()
+			self.condition = self.practice_conditions.pop()
 
 		self.target_distractor, self.distractor_distractor = self.condition
 		
@@ -201,7 +197,6 @@ class SSAT_Color(klibs.Experiment):
 			self.evm.register_ticket(ET(e[1], e[0]))
 
 		hide_mouse_cursor()
-		self.pre_stream_sw = Stopwatch()
 		self.present_target()
 
 	def trial(self):
@@ -221,13 +216,16 @@ class SSAT_Color(klibs.Experiment):
 
 			if len(self.spatial_rc.keypress_listener.responses):
 				spatial_response, spatial_rt = self.spatial_rc.keypress_listener.response()
-				self.present_feedback(spatial_response)
+				if spatial_response != self.present_absent:
+					self.present_feedback()
+
 			else:
 				spatial_response = "None"
 				spatial_rt = 'NA'
 		else:
-			self.pre_stream_sw.pause()
+			
 			try:
+				self.target_sw = Stopwatch()
 				# the display callback "present_stream()" pops an element each pass; when all targets have been shown this bad boy throws an error
 				self.temporal_rc.collect()
 			except IndexError:
@@ -235,7 +233,8 @@ class SSAT_Color(klibs.Experiment):
 
 			if len(self.temporal_rc.keypress_listener.responses):
 				temporal_response, temporal_rt = self.temporal_rc.keypress_listener.response()
-				self.present_feedback(temporal_response)
+				if temporal_response != self.present_absent:
+					self.present_feedback()
 
 			else:
 				temporal_response = "None"
@@ -243,6 +242,7 @@ class SSAT_Color(klibs.Experiment):
 		
 		clear()
 		return {
+			"practicing": str(P.practicing),
 			"block_num": P.block_number,
 			"trial_num": P.trial_number,
 			"search_type": self.search_type,
@@ -293,17 +293,14 @@ class SSAT_Color(klibs.Experiment):
 		blit(self.fixation, location=P.screen_c, registration=5)
 		flip()
 
-	def present_feedback(self, response):
+	def present_feedback(self):
 		fill()
-		if response == self.present_absent:
-			message("Correct!", location=P.screen_c, registration=5, blit_txt=True)
-		else:
-			message("Incorrect!", location=P.screen_c, registration=5, blit_txt=True)
+		message("Incorrect!", location=P.screen_c, registration=5, blit_txt=True)
 		flip()
 
 		feedback_period_cd = CountDown(0.5) # seconds
 		while feedback_period_cd.counting():
-			pass
+			ui_request()
 
 	def create_stimuli(self):
 
@@ -328,17 +325,15 @@ class SSAT_Color(klibs.Experiment):
 
 	def present_array(self):
 		fill()
+		blit(self.fixation, registration=5, location=P.screen_c)
 
 		if self.present_absent == PRESENT:
 			blit(self.target_item, registration=5, location=self.target_loc)
 
-		blit(self.fixation, registration=5, location=P.screen_c)
-	
 		for loc in self.item_locs:
 			blit(random.choice(self.distractors), registration=5, location=loc)
 		
 		flip()
-		hide_mouse_cursor()
 
 
 	def prepare_stream(self):
@@ -361,7 +356,6 @@ class SSAT_Color(klibs.Experiment):
 	
 
 	def present_stream(self):
-		hide_mouse_cursor()
 
 		duration_cd = CountDown(self.item_duration, start=False)
 		isi_cd = CountDown(self.isi, start=False)
@@ -382,7 +376,7 @@ class SSAT_Color(klibs.Experiment):
 		fill()
 
 		if item[1]:
-			self.target_onset = self.evm.trial_time_ms - self.pre_stream_sw.elapsed()
+			self.target_onset = self.target_sw.elapsed()
 		
 		isi_cd.start()
 		while isi_cd.counting():
