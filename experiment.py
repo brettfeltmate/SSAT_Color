@@ -239,7 +239,7 @@ class SSAT_Color(klibs.Experiment):
 			except IndexError:
 				pass
 			
-			self.stream_sw.stop()
+			self.stream_sw.pause()
 
 			if len(self.temporal_pre_rc.keypress_listener.responses):
 				temporal_response, temporal_rt = self.temporal_pre_rc.keypress_listener.response()
